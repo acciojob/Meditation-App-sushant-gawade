@@ -136,7 +136,7 @@
     let isPlaying = false;
     let timerInterval = null;
 
-    // circle length (r=40 => circumference = 2*pi*40 ~ 251.2). Use same as stroke-dasharray in HTML
+    // circle length (r=40 => circumference = 2*pi*40 ~ 251.2)
     const outlineLength = 2 * Math.PI * 40;
     moving.style.strokeDasharray = outlineLength;
     moving.style.strokeDashoffset = outlineLength; // initially full offset (empty progress)
@@ -145,7 +145,6 @@
     function formatTime(s) {
       const m = Math.floor(s / 60);
       const sec = s % 60;
-      // keep "10:0" style for whole seconds like example
       return sec === 0 ? `${m}:0` : `${m}:${sec.toString().padStart(2,'0')}`;
     }
 
@@ -154,17 +153,18 @@
     timeDisplay.textContent = formatTime(timeLeft);
 
     function startTimer() {
-      // For Cypress testing environment, mute audio so play() is allowed when the click may not be treated as a user gesture.
-      if (window.Cypress) { try { audio.muted = true; } catch(e) {} }
+      // In Cypress, mute audio to allow play() when click may not be considered a user gesture.
+      if (window.Cypress) {
+        try { audio.muted = true; } catch(e) {}
+      }
 
       // attempt to play audio and video; catch rejections so tests don't fail on uncaught promise rejections
-      if (audio.play) audio.play().catch(()=>{});
-      if (video.play) video.play().catch(()=>{});
+      try { audio.play && audio.play().catch(()=>{}); } catch(e) {}
+      try { video.play && video.play().catch(()=>{}); } catch(e) {}
 
       isPlaying = true;
       playBtn.setAttribute('aria-label','pause');
 
-      // clear old interval
       if (timerInterval) clearInterval(timerInterval);
 
       const endTime = Date.now() + timeLeft * 1000;
@@ -186,10 +186,8 @@
           clearInterval(timerInterval);
           timerInterval = null;
           isPlaying = false;
-          audio.pause();
-          audio.currentTime = 0;
-          video.pause();
-          video.currentTime = 0;
+          try { audio.pause(); audio.currentTime = 0; } catch(e) {}
+          try { video.pause(); video.currentTime = 0; } catch(e) {}
           playBtn.innerHTML = `<svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M8 5v14l11-7L8 5z\" fill=\"#ffffff\"/></svg>`;
           timeLeft = fakeDuration;
           timeDisplay.textContent = formatTime(timeLeft);
@@ -197,13 +195,11 @@
         }
       }, 250);
     }
-      }, 250);
-    }
 
     function pauseTimer(){
       if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
-      audio.pause();
-      video.pause();
+      try { audio.pause(); } catch(e) {}
+      try { video.pause(); } catch(e) {}
       isPlaying = false;
       playBtn.setAttribute('aria-label','play');
     }
@@ -221,22 +217,15 @@
     });
 
     // time select buttons
-    smaller.addEventListener('click', ()=>{
-      setDuration(2*60);
-    });
-    medium.addEventListener('click', ()=>{
-      setDuration(5*60);
-    });
-    longer.addEventListener('click', ()=>{
-      setDuration(10*60);
-    });
+    smaller.addEventListener('click', ()=>{ setDuration(2*60); });
+    medium.addEventListener('click', ()=>{ setDuration(5*60); });
+    longer.addEventListener('click', ()=>{ setDuration(10*60); });
 
     function setDuration(seconds){
       fakeDuration = seconds;
-      // reset timer
       if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
-      audio.pause(); audio.currentTime = 0;
-      video.pause(); video.currentTime = 0;
+      try { audio.pause(); audio.currentTime = 0; } catch(e) {}
+      try { video.pause(); video.currentTime = 0; } catch(e) {}
       isPlaying = false;
       playBtn.innerHTML = `<svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M8 5v14l11-7L8 5z\" fill=\"#ffffff\"/></svg>`;
       moving.style.strokeDashoffset = outlineLength;
@@ -253,25 +242,21 @@
         audio.src = soundSrc;
         const srcEl = video.querySelector('source');
         if (srcEl) srcEl.src = videoSrc;
-        // reload media
-        try { audio.load(); } catch(e){}
-        try { video.load(); } catch(e){}
-        // if currently playing, restart play with new sources (catch play promise)
+        try { audio.load(); } catch(e) {}
+        try { video.load(); } catch(e) {}
         if (isPlaying) {
-          audio.play && audio.play().catch(()=>{});
-          video.play && video.play().catch(()=>{});
+          try { audio.play && audio.play().catch(()=>{}); } catch(e) {}
+          try { video.play && video.play().catch(()=>{}); } catch(e) {}
         }
       });
     });
 
     // allow clicking on vid-container to toggle mute/unmute for demo
-    document.querySelector('.vid-container').addEventListener('click',()=>{
-      video.muted = !video.muted;
-    });
+    document.querySelector('.vid-container').addEventListener('click',()=>{ video.muted = !video.muted; });
 
     // ensure media paused at start
-    audio.pause();
-    video.pause();
+    try { audio.pause(); } catch(e) {}
+    try { video.pause(); } catch(e) {}
   </script>
 </body>
 </html>
