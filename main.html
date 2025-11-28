@@ -154,9 +154,12 @@
     timeDisplay.textContent = formatTime(timeLeft);
 
     function startTimer() {
-      // play audio and video and catch promise rejections to avoid uncaught exceptions in test env
-      const p1 = audio.play ? audio.play().catch(()=>{}) : Promise.resolve();
-      const p2 = video.play ? video.play().catch(()=>{}) : Promise.resolve();
+      // For Cypress testing environment, mute audio so play() is allowed when the click may not be treated as a user gesture.
+      if (window.Cypress) { try { audio.muted = true; } catch(e) {} }
+
+      // attempt to play audio and video; catch rejections so tests don't fail on uncaught promise rejections
+      if (audio.play) audio.play().catch(()=>{});
+      if (video.play) video.play().catch(()=>{});
 
       isPlaying = true;
       playBtn.setAttribute('aria-label','pause');
@@ -192,6 +195,8 @@
           timeDisplay.textContent = formatTime(timeLeft);
           moving.style.strokeDashoffset = outlineLength;
         }
+      }, 250);
+    }
       }, 250);
     }
 
